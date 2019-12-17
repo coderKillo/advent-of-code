@@ -26,8 +26,18 @@ class WirePlan:
         self.mid = Point(int(w/2), int(h/2))
         self.ptr = self.mid
         self.intersections = []
+        self.wire_idx = 0
+
+    def __str__(self):
+        plan = ""
+        for row in self.plan:
+            for p in row:
+                plan += '.' if p == 0 else str(p)
+            plan += '\n'
+        return plan
 
     def add_wire(self, wire):
+        self.wire_idx += 1
         for c in wire:
             if c[0] == 'R':
                 self.moveRightBy(int(c[1:]))
@@ -62,11 +72,23 @@ class WirePlan:
     def markSpot(self):
         if self.checkIntersection():
             self.intersections.append(self.ptr)
-        self.plan[self.ptr.x][self.ptr.y] = 1
+        self.plan[self.ptr.x][self.ptr.y] = self.wire_idx
 
     def checkIntersection(self):
-        return self.plan[self.ptr.x][self.ptr.y] >= 1
+        return self.plan[self.ptr.x][self.ptr.y] != self.wire_idx
 
+def calculatePlanSize(wire):
+    y = 1
+    x = 1
+    for c in wire:
+        if c[0] == 'R':
+            self.moveRightBy(int(c[1:]))
+        elif c[0] == 'L':
+            self.moveLeftBy(int(c[1:]))
+        elif c[0] == 'D':
+            self.moveDownBy(int(c[1:]))
+        elif c[0] == 'U':
+            self.moveUpBy(int(c[1:]))
 
 #read input and format
 print("Read Input")
@@ -86,11 +108,30 @@ print("Test Begin")
 p = WirePlan(11,10)
 p.ptr.x = 1
 p.ptr.y = 1
+p.wire_idx = 1
 
 print(p.ptr)
 p.move(1,0)
-print(p.ptr)
+p.move(1,0)
+p.move(1,0)
+p.move(0,1)
+p.move(0,1)
+p.move(0,1)
+p.move(0,1)
 
+p.ptr.x = 1
+p.ptr.y = 1
+p.wire_idx = 2
+
+p.move(0,1)
+p.move(0,1)
+p.move(0,1)
+p.move(1,0)
+p.move(1,0)
+p.move(1,0)
+p.move(1,0)
+
+print(p)
 
 print("Test End")
 
