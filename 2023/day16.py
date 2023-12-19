@@ -144,69 +144,93 @@ LIGHT = {
     Directions.RIGHT: ">",
 }
 
-layout = [list(line) for line in layout2.splitlines()]
-layout_h = len(layout)
-layout_w = len(layout[0])
+class Grid:
+    def __init__(self, layout: str) -> None:
+        self.grid = [list(line) for line in layout.splitlines()]
+        self.height = len(self.grid)
+        self.width = len(self.grid[0])
 
-energized_tiles = []
+    def inbound(self, pos: Vector2):
+        return 0 <= pos.x < self.width and 0 <= pos.y < self.height
+    
+    def __getitem__(self, pos: Vector2):
+        return self.grid[pos.y][pos.x]
 
-start = Vector2(0, 0)
+    def __setitem__(self, pos: Vector2, item):
+        self.grid[pos.y][pos.x] = item
 
+class BeamMap:
+    def __init__(self, grid: Grid) -> None:
+        self.energized_tiles = []
+        self.beams = []
+        self.grid = grid
+    
+    def fire_beam(self, start: Vector2, direction: Vector2):
+        pos = start
+        while self.grid.inbound(pos):
 
-def inbound(pos: Vector2):
-    return 0 <= pos.x < layout_w and 0 <= pos.y < layout_h
+            if pos not in self.energized_tiles:
+                self.energized_tiles.append(Vector2(pos.x, pos.y))
 
+            tile = self.grid[pos]
+            is_left_right_moving = direction in [Directions.RIGHT, Directions.LEFT]
+            is_top_down_moving = direction in [Directions.UP, Directions.DOWN]
+            new_direction = None
 
-def fire_beam(start: Vector2, direction: Vector2):
-    pos = start
-    while inbound(pos):
-
-        if pos not in energized_tiles:
-            energized_tiles.append(Vector2(pos.x, pos.y))
-
-        tile = layout[pos.y][pos.x]
-        is_left_right_moving = direction in [Directions.RIGHT, Directions.LEFT]
-        is_top_down_moving = direction in [Directions.UP, Directions.DOWN]
-        new_direction = None
-
-        if tile == EMPTY_SPACE:
-            layout[pos.y][pos.x] = LIGHT[direction]
-        if tile in LIGHT.values():
-            if tile == LIGHT[direction]:
+            if tile == EMPTY_SPACE:
+                self.grid[pos] = LIGHT[direction]
+            if tile in LIGHT.values():
+                if tile == LIGHT[direction]:
+                    return
+            if tile == MIRROR_DOWN:
+                if direction == Directions.RIGHT: new_direction = Directions.DOWN
+                if direction == Directions.LEFT: new_direction = Directions.UP
+                if direction == Directions.DOWN: new_direction = Directions.RIGHT
+                if direction == Directions.UP: new_direction = Directions.LEFT
+                self.beams.append((pos + new_direction, new_direction))
+                return 
+            if tile == MIRROR_UP:
+                if direction == Directions.RIGHT: new_direction = Directions.UP
+                if direction == Directions.LEFT: new_direction = Directions.DOWN
+                if direction == Directions.DOWN: new_direction = Directions.LEFT
+                if direction == Directions.UP: new_direction = Directions.RIGHT
+                self.beams.append((pos + new_direction, new_direction))
                 return
-        if tile == MIRROR_DOWN:
-            if direction == Directions.RIGHT: new_direction = Directions.DOWN
-            if direction == Directions.LEFT: new_direction = Directions.UP
-            if direction == Directions.DOWN: new_direction = Directions.RIGHT
-            if direction == Directions.UP: new_direction = Directions.LEFT
-            fire_beam(pos + new_direction, new_direction)
-            return
-        if tile == MIRROR_UP:
-            if direction == Directions.RIGHT: new_direction = Directions.UP
-            if direction == Directions.LEFT: new_direction = Directions.DOWN
-            if direction == Directions.DOWN: new_direction = Directions.LEFT
-            if direction == Directions.UP: new_direction = Directions.RIGHT
-            fire_beam(pos + new_direction, new_direction)
-            return
-        if tile == VERTICAL_SPLITTER:
-            if is_top_down_moving: pass
-            if is_left_right_moving:
-                pass
-                fire_beam(pos + Directions.DOWN, Directions.DOWN)
-                fire_beam(pos + Directions.UP, Directions.UP)
-                return
-        if tile == HORIZONTAL_SPLITTER:
-            if is_left_right_moving: pass
-            if is_top_down_moving:
-                pass
-                fire_beam(pos + Directions.RIGHT, Directions.RIGHT)
-                fire_beam(pos + Directions.LEFT, Directions.LEFT)
-                return
+            if tile == VERTICAL_SPLITTER:
+                if is_top_down_moving: pass
+                if is_left_right_moving:
+                    self.beams.append((pos + Directions.DOWN, Directions.DOWN))
+                    self.beams.append((pos + Directions.UP, Directions.UP))
+                    return
+            if tile == HORIZONTAL_SPLITTER:
+                if is_left_right_moving: pass
+                if is_top_down_moving:
+                    self.beams.append((pos + Directions.RIGHT, Directions.RIGHT))
+                    self.beams.append((pos + Directions.LEFT, Directions.LEFT))
+                    return
 
-        pos += direction
+            pos += direction
+        
+    def fill(self, start, direction):
+        self.beams.append((start, direction))
+        while True:
+            start, direction = self.beams.pop()
+            self.fire_beam(start, direction)
+            
+            if len(self.beams) == 0:
+                break
+
+    def get_energized_tiles(self):
+        return len(self.energized_tiles)
 
 
-fire_beam(start, Directions.RIGHT)
+def main(input: str):
+    grid = Grid(input)
+    beam_map = BeamMap(grid)
+    beam_map.fill(Vector2(0,0), Directions.RIGHT)
+    print(beam_map.get_energized_tiles())
 
-print(len(energized_tiles))
+
+main(layout2)
+
 # print("\n".join(["".join(line) for line in layout]))
