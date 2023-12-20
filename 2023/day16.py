@@ -1,5 +1,7 @@
+import copy
 from util.Vector2 import Vector2
 from util.timer import timer_func
+from tqdm import tqdm
 
 layout1 = r""".|...\....
 |.-.\.....
@@ -144,7 +146,7 @@ LIGHT = {
     Directions.RIGHT: ">",
 }
 
-class Grid:
+class Grid: 
     def __init__(self, layout: str) -> None:
         self.grid = [list(line) for line in layout.splitlines()]
         self.height = len(self.grid)
@@ -158,12 +160,15 @@ class Grid:
 
     def __setitem__(self, pos: Vector2, item):
         self.grid[pos.y][pos.x] = item
+    
+    def __str__(self) -> str:
+        return "\n".join(["".join(line) for line in self.grid])
 
 class BeamMap:
     def __init__(self, grid: Grid) -> None:
         self.energized_tiles = []
         self.beams = []
-        self.grid = grid
+        self.grid = copy.deepcopy(grid)
     
     def fire_beam(self, start: Vector2, direction: Vector2):
         pos = start
@@ -219,18 +224,45 @@ class BeamMap:
             
             if len(self.beams) == 0:
                 break
-
+    
     def get_energized_tiles(self):
         return len(self.energized_tiles)
 
-
-def main(input: str):
+def main(input: str, part1 = False):
     grid = Grid(input)
-    beam_map = BeamMap(grid)
-    beam_map.fill(Vector2(0,0), Directions.RIGHT)
-    print(beam_map.get_energized_tiles())
+    if part1:
+        beam_map = BeamMap(grid)
+        beam_map.fill(Vector2(85,0), Directions.DOWN)
+        print(beam_map.get_energized_tiles())
+    else:
+        max_value = 0
+        print("start scan horizontal")
+        for x in tqdm(range(grid.width)):
+            if x in [85]:
+                continue
+            beam_map = BeamMap(grid)
+            beam_map.fill(Vector2(x,0), Directions.DOWN)
+            max_value = max(beam_map.get_energized_tiles(), max_value)
+
+            beam_map = BeamMap(grid)
+            beam_map.fill(Vector2(x,grid.height-1), Directions.UP)
+            max_value = max(beam_map.get_energized_tiles(), max_value)
+
+        print("start scan vertical")
+        for y in tqdm(range(grid.height)):
+            beam_map = BeamMap(grid)
+            beam_map.fill(Vector2(0,y), Directions.RIGHT)
+            max_value = max(beam_map.get_energized_tiles(), max_value)
+
+            beam_map = BeamMap(grid)
+            beam_map.fill(Vector2(grid.width-1,y), Directions.LEFT)
+            max_value = max(beam_map.get_energized_tiles(), max_value)
+        print("result:", max_value)
+
+
+
+    
 
 
 main(layout2)
 
-# print("\n".join(["".join(line) for line in layout]))
